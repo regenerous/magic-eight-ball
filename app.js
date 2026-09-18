@@ -143,8 +143,12 @@
 
   function fitAnswerText(text){
     const value=String(text).trim();
+    const words=value.split(/\s+/).filter(Boolean);
     const length=value.length;
-    const longestWord=value.split(/\s+/).reduce((max,word)=>Math.max(max,word.length),0);
+    const longestWord=words.reduce((max,word)=>Math.max(max,word.length),0);
+    const singleWord=words.length===1;
+
+    els.answerText.style.whiteSpace=singleWord?'nowrap':'normal';
 
     let size=20;
     if(length>9) size=18;
@@ -204,6 +208,7 @@
       els.answerText.textContent=result.answer.text;
       els.answerText.style.overflowWrap='normal';
       els.answerText.style.wordBreak='keep-all';
+      els.answerText.style.whiteSpace=result.answer.text.trim().includes(' ')?'normal':'nowrap';
       fitAnswerText(result.answer.text);
       els.ball.classList.add('is-revealed');
       fadeMixingAudio(ANSWER_FADE_MS/1000);
@@ -422,7 +427,7 @@
   function addAnswer(){if(settings.answers.length>=MAX_ANSWERS)return;settings.answers.push({text:'New answer!',group:'maybe'});settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
   function deleteAnswer(index){if(settings.answers.length<=MIN_ANSWERS)return;settings.answers.splice(index,1);settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
 
-  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.textContent='';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
+  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.style.whiteSpace='';els.answerText.textContent='';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
   els.permissionButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);
