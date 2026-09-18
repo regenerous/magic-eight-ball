@@ -51,6 +51,11 @@
   let lastShakeAt = 0;
   let audioContext = null;
   let revealTimer = null;
+  let finishTimer = null;
+  let mixAudio = null;
+  let clankTimer = null;
+  let audioStopTimer = null;
+  const ANSWER_FADE_MS = 1550;
 
   function cloneDefaults() { return JSON.parse(JSON.stringify(DEFAULTS)); }
   function clampNumber(value, min, max, fallback) { const number = Number(value); return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback; }
@@ -126,14 +131,15 @@
     const length=value.length;
     const longestWord=value.split(/\s+/).reduce((max,word)=>Math.max(max,word.length),0);
 
-    let size=18;
-    if(length>10) size=16.5;
-    if(length>16) size=15;
-    if(length>22) size=13.5;
-    if(length>30) size=12;
-    if(length>38) size=10.5;
+    let size=20;
+    if(length>9) size=18;
+    if(length>14) size=16;
+    if(length>20) size=14;
+    if(length>28) size=12;
+    if(length>36) size=10.5;
+    if(length>46) size=9;
     if(longestWord>9) size=Math.min(size,13);
-    if(longestWord>12) size=Math.min(size,11);
+    if(longestWord>12) size=Math.min(size,10.5);
 
     els.answerText.style.fontSize=`${size}px`;
     els.answerText.style.lineHeight='1';
@@ -142,8 +148,8 @@
     while(
       (els.answerText.scrollWidth>els.answerText.clientWidth+1 ||
        els.answerText.scrollHeight>els.answerText.clientHeight+1) &&
-      size>7 &&
-      tries<30
+      size>6.5 &&
+      tries<40
     ){
       size-=0.5;
       els.answerText.style.fontSize=`${size}px`;
@@ -161,7 +167,13 @@
   async function askMagicEightBall(source='button'){
     if(busy||!settings.answers.length)return;
     if(!validateRule()){els.statusText.textContent='Fix the Magic Lab rule first!';return;}
-    busy=true;els.askButton.disabled=true;unlockAudio();playShakeSound();clearTimeout(revealTimer);
+    busy=true;
+    els.askButton.disabled=true;
+    unlockAudio();
+    clearTimeout(revealTimer);
+    clearTimeout(finishTimer);
+    stopMixingAudio(0);
+
     const result=chooseAnswer();
     const durationMs=settings.revealSeconds*1000;
 
@@ -170,6 +182,7 @@
     els.answerText.textContent='';
     els.statusText.textContent=source==='shake'?'Shake detected! Mixing the answers…':'Mixing the answers…';
     els.ball.classList.add('is-mixing');
+    startMixingAudio();
 
     revealTimer=setTimeout(()=>{
       els.ball.classList.remove('is-mixing');
@@ -177,18 +190,167 @@
       els.answerText.textContent=result.answer.text;
       fitAnswerText(result.answer.text);
       els.ball.classList.add('is-revealed');
+      fadeMixingAudio(ANSWER_FADE_MS/1000);
       updateTrace(result);
       els.statusText.textContent=`Answer[${result.answerIndex}] says: “${result.answer.text}”`;
-      playBubbleSound();playRevealSound(result.answer.group);
-      busy=false;els.askButton.disabled=false;
+
+      finishTimer=setTimeout(()=>{
+        busy=false;
+        els.askButton.disabled=false;
+      },ANSWER_FADE_MS);
     },durationMs);
   }
 
-  function unlockAudio(){if(settings.muted)return;const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;if(!audioContext)audioContext=new AudioCtx();if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});}
-  function playTone(frequency,duration,gainValue=.035,type='sine',delay=0){if(settings.muted)return;unlockAudio();if(!audioContext)return;const start=audioContext.currentTime+delay;const oscillator=audioContext.createOscillator();const gain=audioContext.createGain();oscillator.type=type;oscillator.frequency.setValueAtTime(frequency,start);gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(gainValue,start+.02);gain.gain.exponentialRampToValueAtTime(.0001,start+duration);oscillator.connect(gain).connect(audioContext.destination);oscillator.start(start);oscillator.stop(start+duration+.04);}
-  function playShakeSound(){playTone(105,.12,.025,'triangle',0);playTone(82,.14,.02,'triangle',.14);playTone(118,.12,.02,'triangle',.3);}
-  function playBubbleSound(){playTone(360,.14,.018,'sine',0);playTone(510,.12,.014,'sine',.1);}
-  function playRevealSound(group){const base=group==='yes'?520:group==='no'?250:390;playTone(base,.22,.03,'sine',0);playTone(base*1.25,.28,.026,'sine',.15);}
+  function unlockAudio(){
+    if(settings.muted)return;
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx)return;
+    if(!audioContext)audioContext=new AudioCtx();
+    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
+  }
+
+  function playTone(frequency,duration,gainValue=.035,type='sine',delay=0){
+    if(settings.muted)return;
+    unlockAudio();
+    if(!audioContext)return;
+    const start=audioContext.currentTime+delay;
+    const oscillator=audioContext.createOscillator();
+    const gain=audioContext.createGain();
+    oscillator.type=type;
+    oscillator.frequency.setValueAtTime(frequency,start);
+    gain.gain.setValueAtTime(.0001,start);
+    gain.gain.exponentialRampToValueAtTime(gainValue,start+.02);
+    gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start(start);
+    oscillator.stop(start+duration+.04);
+  }
+
+  function makeNoiseBuffer(seconds=1.5){
+    const frames=Math.max(1,Math.floor(audioContext.sampleRate*seconds));
+    const buffer=audioContext.createBuffer(1,frames,audioContext.sampleRate);
+    const data=buffer.getChannelData(0);
+    let last=0;
+    for(let i=0;i<frames;i+=1){
+      const white=Math.random()*2-1;
+      last=last*.82+white*.18;
+      data[i]=last*.7;
+    }
+    return buffer;
+  }
+
+  function playMixClank(){
+    if(!mixAudio||settings.muted||!audioContext)return;
+    const now=audioContext.currentTime;
+    const hit=audioContext.createGain();
+    hit.gain.setValueAtTime(.0001,now);
+    hit.gain.exponentialRampToValueAtTime(.055,now+.006);
+    hit.gain.exponentialRampToValueAtTime(.0001,now+.115);
+    hit.connect(mixAudio.master);
+
+    const low=audioContext.createOscillator();
+    low.type='triangle';
+    low.frequency.setValueAtTime(220+Math.random()*70,now);
+    low.frequency.exponentialRampToValueAtTime(95+Math.random()*35,now+.11);
+    low.connect(hit);
+
+    const high=audioContext.createOscillator();
+    high.type='sine';
+    high.frequency.setValueAtTime(720+Math.random()*260,now);
+    high.frequency.exponentialRampToValueAtTime(310+Math.random()*90,now+.075);
+    const highGain=audioContext.createGain();
+    highGain.gain.value=.38;
+    high.connect(highGain).connect(hit);
+
+    low.start(now); high.start(now);
+    low.stop(now+.13); high.stop(now+.1);
+  }
+
+  function queueClank(){
+    clearTimeout(clankTimer);
+    if(!mixAudio||mixAudio.fading||settings.muted)return;
+    const delay=260+Math.random()*430;
+    clankTimer=setTimeout(()=>{
+      playMixClank();
+      queueClank();
+    },delay);
+  }
+
+  function startMixingAudio(){
+    if(settings.muted)return;
+    unlockAudio();
+    if(!audioContext)return;
+    stopMixingAudio(0);
+
+    const now=audioContext.currentTime;
+    const master=audioContext.createGain();
+    master.gain.setValueAtTime(.0001,now);
+    master.gain.exponentialRampToValueAtTime(.72,now+.18);
+    master.connect(audioContext.destination);
+
+    const noise=audioContext.createBufferSource();
+    noise.buffer=makeNoiseBuffer(1.6);
+    noise.loop=true;
+
+    const lowpass=audioContext.createBiquadFilter();
+    lowpass.type='lowpass';
+    lowpass.frequency.value=780;
+    lowpass.Q.value=.7;
+
+    const waterGain=audioContext.createGain();
+    waterGain.gain.value=.038;
+
+    const lfo=audioContext.createOscillator();
+    lfo.type='sine';
+    lfo.frequency.value=.72;
+    const lfoGain=audioContext.createGain();
+    lfoGain.gain.value=.016;
+    lfo.connect(lfoGain).connect(waterGain.gain);
+
+    const shimmer=audioContext.createBiquadFilter();
+    shimmer.type='bandpass';
+    shimmer.frequency.value=1250;
+    shimmer.Q.value=.45;
+    const shimmerGain=audioContext.createGain();
+    shimmerGain.gain.value=.011;
+
+    noise.connect(lowpass).connect(waterGain).connect(master);
+    noise.connect(shimmer).connect(shimmerGain).connect(master);
+    noise.start(now);
+    lfo.start(now);
+
+    mixAudio={master,noise,lfo,fading:false};
+    playMixClank();
+    queueClank();
+  }
+
+  function fadeMixingAudio(seconds=1.55){
+    clearTimeout(clankTimer);
+    clankTimer=null;
+    if(!mixAudio||!audioContext)return;
+    mixAudio.fading=true;
+    const active=mixAudio;
+    const now=audioContext.currentTime;
+    active.master.gain.cancelScheduledValues(now);
+    active.master.gain.setValueAtTime(Math.max(.001,active.master.gain.value||.72),now);
+    active.master.gain.exponentialRampToValueAtTime(.0001,now+seconds);
+    clearTimeout(audioStopTimer);
+    audioStopTimer=setTimeout(()=>{
+      if(mixAudio===active)stopMixingAudio(0);
+    },Math.ceil(seconds*1000)+80);
+  }
+
+  function stopMixingAudio(){
+    clearTimeout(clankTimer);
+    clearTimeout(audioStopTimer);
+    clankTimer=null;
+    audioStopTimer=null;
+    if(!mixAudio)return;
+    try{mixAudio.noise.stop();}catch{}
+    try{mixAudio.lfo.stop();}catch{}
+    try{mixAudio.master.disconnect();}catch{}
+    mixAudio=null;
+  }
 
   async function enableShake(){
     unlockAudio();
@@ -205,11 +367,11 @@
   function addAnswer(){if(settings.answers.length>=MAX_ANSWERS)return;settings.answers.push({text:'New answer!',group:'maybe'});settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
   function deleteAnswer(index){if(settings.answers.length<=MIN_ANSWERS)return;settings.answers.splice(index,1);settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
 
-  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.innerHTML='SHAKE<br>ME!';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
+  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;els.askButton.disabled=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.innerHTML='SHAKE<br>ME!';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
   els.askButton.addEventListener('click',()=>askMagicEightBall('button'));els.enableShakeButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);
-  els.soundToggle.addEventListener('click',()=>{settings.muted=!settings.muted;saveSettings();renderSoundButton();if(!settings.muted){unlockAudio();playTone(600,.16,.02,'sine');}});
+  els.soundToggle.addEventListener('click',()=>{settings.muted=!settings.muted;saveSettings();renderSoundButton();if(settings.muted){stopMixingAudio(0);}else{unlockAudio();playTone(600,.16,.02,'sine');}});
   els.operatorSelect.addEventListener('change',()=>{settings.operator=els.operatorSelect.value;saveSettings();validateRule();});
   els.thresholdInput.addEventListener('change',()=>{settings.threshold=Math.round(clampNumber(els.thresholdInput.value,0,settings.answers.length-1,0));els.thresholdInput.value=settings.threshold;saveSettings();});
   els.thenGroupSelect.addEventListener('change',()=>{settings.thenGroup=els.thenGroupSelect.value;saveSettings();validateRule();});
