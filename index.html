@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
   <title>Magic Eight Ball</title>
 </head>
 <body>
@@ -56,26 +56,35 @@
             <div id="polyhedron" class="polyhedron" aria-hidden="true">
               <svg class="die-svg" viewBox="0 0 220 200" role="presentation">
                 <defs>
-                  <linearGradient id="f1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fc6ff"/><stop offset="1" stop-color="#1772f2"/></linearGradient>
-                  <linearGradient id="f2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d8fff"/><stop offset="1" stop-color="#1c38bd"/></linearGradient>
-                  <linearGradient id="f3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6576ff"/><stop offset="1" stop-color="#2536a8"/></linearGradient>
-                  <linearGradient id="f4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2449d7"/><stop offset="1" stop-color="#111d72"/></linearGradient>
-                  <linearGradient id="centerFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2688ff"/><stop offset="1" stop-color="#0f4ee5"/></linearGradient>
+                  <linearGradient id="icoFront" x1="0" y1="0" x2="0.25" y2="1">
+                    <stop offset="0" stop-color="#42aaff"/>
+                    <stop offset=".46" stop-color="#176bf2"/>
+                    <stop offset="1" stop-color="#0a38a8"/>
+                  </linearGradient>
+                  <linearGradient id="icoLight" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#78d7ff"/>
+                    <stop offset="1" stop-color="#2374ee"/>
+                  </linearGradient>
+                  <linearGradient id="icoMid" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#3b8dff"/>
+                    <stop offset="1" stop-color="#253cbc"/>
+                  </linearGradient>
+                  <linearGradient id="icoDark" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#174aa9"/>
+                    <stop offset="1" stop-color="#091d65"/>
+                  </linearGradient>
                 </defs>
-                <g class="die-body" stroke="#6fa8ff" stroke-opacity=".42" stroke-width="1.4" stroke-linejoin="round">
-               <polygon points="110,8 58,30 78,78" fill="url(#f1)"/>
-                  <polygon points="110,8 78,78 142,78" fill="#236cec"/>
-                  <polygon points="110,8 142,78 162,30" fill="url(#f3)"/>
-                  <polygon points="58,30 24,78 78,78" fill="#168be9"/>
-                  <polygon points="162,30 142,78 196,78" fill="#5359e5"/>
-                  <polygon points="24,78 46,138 78,78" fill="#0b58c8"/>
-                  <polygon points="196,78 174,138 142,78" fill="#2939bc"/>
-                  <polygon points="46,138 82,188 110,126" fill="#0b2c87"/>
-                  <polygon points="174,138 138,188 110,126" fill="#151f7d"/>
-                  <polygon points="82,188 138,188 110,126" fill="#0a1a61"/>
-                  <polygon points="78,78 46,138 110,126" fill="url(#f2)"/>
-                  <polygon points="142,78 110,126 174,138" fill="url(#f4)"/>
-                  <polygon points="78,78 110,126 142,78" fill="url(#centerFace)"/>
+                <g class="die-body" stroke="#8cc8ff" stroke-opacity=".42" stroke-width="1.25" stroke-linejoin="round">
+                  <polygon class="ico-face far" points="32.8,144.6 91.7,185.0 108.0,179.6" fill="#0a245e"/>
+                  <polygon class="ico-face far" points="32.8,144.6 46.4,59.9 37.7,81.2" fill="#0d347f"/>
+                  <polygon class="ico-face far" points="182.6,159.8 91.7,185.0 108.0,179.6" fill="#0b286d"/>
+                  <polygon class="ico-face mid" points="111.0,15.0 46.4,59.9 37.7,81.2" fill="#1a58be"/>
+                  <polygon class="ico-face mid" points="182.6,159.8 187.2,66.9 158.1,88.7" fill="#293db3"/>
+                  <polygon class="ico-face mid" points="111.0,15.0 187.2,66.9 158.1,88.7" fill="url(#icoMid)"/>
+                  <polygon class="ico-face near" points="32.8,144.6 91.7,185.0 37.7,81.2" fill="url(#icoDark)"/>
+                  <polygon class="ico-face near" points="182.6,159.8 91.7,185.0 158.1,88.7" fill="#173c9d"/>
+                  <polygon class="ico-face near" points="111.0,15.0 158.1,88.7 37.7,81.2" fill="url(#icoLight)"/>
+                  <polygon class="ico-face answer-triangle" points="91.7,185.0 158.1,88.7 37.7,81.2" fill="url(#icoFront)"/>
                 </g>
               </svg>
               <div class="answer-face-text"><span id="answerText">SHAKE<br>ME!</span></div>
