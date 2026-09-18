@@ -122,13 +122,33 @@
   function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 
   function fitAnswerText(text){
-    const length=String(text).trim().length;
-    let size='clamp(.68rem,3vw,1.08rem)';
-    if(length>12) size='clamp(.61rem,2.7vw,.98rem)';
-    if(length>18) size='clamp(.54rem,2.35vw,.88rem)';
-    if(length>25) size='clamp(.47rem,2.05vw,.78rem)';
-    if(length>34) size='clamp(.41rem,1.8vw,.69rem)';
-    els.answerText.style.fontSize=size;
+    const value=String(text).trim();
+    const length=value.length;
+    const longestWord=value.split(/\s+/).reduce((max,word)=>Math.max(max,word.length),0);
+
+    let size=18;
+    if(length>10) size=16.5;
+    if(length>16) size=15;
+    if(length>22) size=13.5;
+    if(length>30) size=12;
+    if(length>38) size=10.5;
+    if(longestWord>9) size=Math.min(size,13);
+    if(longestWord>12) size=Math.min(size,11);
+
+    els.answerText.style.fontSize=`${size}px`;
+    els.answerText.style.lineHeight='1';
+
+    let tries=0;
+    while(
+      (els.answerText.scrollWidth>els.answerText.clientWidth+1 ||
+       els.answerText.scrollHeight>els.answerText.clientHeight+1) &&
+      size>7 &&
+      tries<30
+    ){
+      size-=0.5;
+      els.answerText.style.fontSize=`${size}px`;
+      tries+=1;
+    }
   }
 
   function updateTrace(result){
@@ -154,8 +174,8 @@
     revealTimer=setTimeout(()=>{
       els.ball.classList.remove('is-mixing');
       void els.ball.offsetWidth;
-      fitAnswerText(result.answer.text);
       els.answerText.textContent=result.answer.text;
+      fitAnswerText(result.answer.text);
       els.ball.classList.add('is-revealed');
       updateTrace(result);
       els.statusText.textContent=`Answer[${result.answerIndex}] says: “${result.answer.text}”`;
@@ -185,7 +205,7 @@
   function addAnswer(){if(settings.answers.length>=MAX_ANSWERS)return;settings.answers.push({text:'New answer!',group:'maybe'});settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
   function deleteAnswer(index){if(settings.answers.length<=MIN_ANSWERS)return;settings.answers.splice(index,1);settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
 
-  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.innerHTML='SHAKE<br>ME!';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
+  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.innerHTML='SHAKE<br>ME!';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
   els.askButton.addEventListener('click',()=>askMagicEightBall('button'));els.enableShakeButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);

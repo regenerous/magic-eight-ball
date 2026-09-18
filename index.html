@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
   <title>Magic Eight Ball</title>
 </head>
 <body>
@@ -73,6 +73,9 @@
                     <stop offset="0" stop-color="#174aa9"/>
                     <stop offset="1" stop-color="#091d65"/>
                   </linearGradient>
+                  <clipPath id="answerFaceClip">
+                    <polygon points="91.7,185.0 158.1,88.7 37.7,81.2"/>
+                  </clipPath>
                 </defs>
                 <g class="die-body" stroke="#8cc8ff" stroke-opacity=".42" stroke-width="1.25" stroke-linejoin="round">
                   <polygon class="ico-face far" points="32.8,144.6 91.7,185.0 108.0,179.6" fill="#0a245e"/>
@@ -86,8 +89,12 @@
                   <polygon class="ico-face near" points="111.0,15.0 158.1,88.7 37.7,81.2" fill="url(#icoLight)"/>
                   <polygon class="ico-face answer-triangle" points="91.7,185.0 158.1,88.7 37.7,81.2" fill="url(#icoFront)"/>
                 </g>
+                <foreignObject class="answer-face-foreign" x="37.7" y="81.2" width="120.4" height="103.8" clip-path="url(#answerFaceClip)">
+                  <div xmlns="http://www.w3.org/1999/xhtml" class="answer-face-text">
+                    <span id="answerText">SHAKE<br/>ME!</span>
+                  </div>
+                </foreignObject>
               </svg>
-              <div class="answer-face-text"><span id="answerText">SHAKE<br>ME!</span></div>
             </div>
           </div>
         </div>
@@ -174,6 +181,6 @@
   </main>
 
   <dialog id="hintDialog" class="hint-dialog"><form method="dialog"><button class="dialog-close" value="close" aria-label="Close hint">×</button><div id="hintIcon" class="hint-icon">💡</div><h2 id="hintTitle">Hint</h2><p id="hintText"></p><button class="primary-button dialog-ok" value="close">Got it!</button></form></dialog>
-  <script src="app.js?v=3" defer></script>
+  <script src="app.js?v=4" defer></script>
 </body>
 </html>
