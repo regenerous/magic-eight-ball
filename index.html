@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#090a14" />
+  <meta name="theme-color" content="#160b45" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Magic Eight Ball" />
@@ -11,15 +11,15 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2" />
   <title>Magic Eight Ball</title>
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">ASK THE</p>
-        <h1>MAGIC EIGHT BALL!</h1>
+      <div class="title-wrap" aria-label="Ask the Magic Eight Ball">
+        <span class="title-kicker">ASK THE</span>
+        <h1>MAGIC 8 BALL!</h1>
       </div>
       <button id="soundToggle" class="icon-button" type="button" aria-label="Mute sounds" title="Mute sounds">🔊</button>
     </header>
@@ -27,28 +27,66 @@
     <section class="play-zone" aria-labelledby="playHeading">
       <h2 id="playHeading" class="sr-only">Magic Eight Ball</h2>
 
+      <div class="magic-scene" aria-hidden="true">
+        <span class="sparkle s1">★</span>
+        <span class="sparkle s2">✦</span>
+        <span class="sparkle s3">★</span>
+        <span class="sparkle s4">✦</span>
+        <span class="sparkle s5">★</span>
+        <span class="sparkle s6">✦</span>
+        <span class="cloud c1"></span>
+        <span class="cloud c2"></span>
+      </div>
+
       <div id="ball" class="ball" aria-live="polite" aria-label="Magic Eight Ball answer window">
+        <div class="ball-rim" aria-hidden="true"></div>
         <div class="ball-highlight" aria-hidden="true"></div>
+        <div class="ball-highlight small" aria-hidden="true"></div>
         <div class="window-ring">
           <div class="liquid-window">
             <div class="liquid-glow" aria-hidden="true"></div>
             <div class="wave wave-one" aria-hidden="true"></div>
             <div class="wave wave-two" aria-hidden="true"></div>
+            <div class="wave wave-three" aria-hidden="true"></div>
             <div class="bubble b1" aria-hidden="true"></div>
             <div class="bubble b2" aria-hidden="true"></div>
             <div class="bubble b3" aria-hidden="true"></div>
+            <div class="bubble b4" aria-hidden="true"></div>
 
             <div id="polyhedron" class="polyhedron" aria-hidden="true">
-              <div class="facet facet-a"></div>
-              <div class="facet facet-b"></div>
-              <div class="facet facet-c"></div>
-              <div class="facet facet-d"></div>
-              <div class="answer-face">
-                <span id="answerText">SHAKE<br>ME!</span>
-              </div>
+              <svg class="die-svg" viewBox="0 0 220 200" role="presentation">
+                <defs>
+                  <linearGradient id="f1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fc6ff"/><stop offset="1" stop-color="#1772f2"/></linearGradient>
+                  <linearGradient id="f2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d8fff"/><stop offset="1" stop-color="#1c38bd"/></linearGradient>
+                  <linearGradient id="f3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6576ff"/><stop offset="1" stop-color="#2536a8"/></linearGradient>
+                  <linearGradient id="f4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2449d7"/><stop offset="1" stop-color="#111d72"/></linearGradient>
+                  <linearGradient id="centerFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2688ff"/><stop offset="1" stop-color="#0f4ee5"/></linearGradient>
+                </defs>
+                <g class="die-body" stroke="#6fa8ff" stroke-opacity=".42" stroke-width="1.4" stroke-linejoin="round">
+               <polygon points="110,8 58,30 78,78" fill="url(#f1)"/>
+                  <polygon points="110,8 78,78 142,78" fill="#236cec"/>
+                  <polygon points="110,8 142,78 162,30" fill="url(#f3)"/>
+                  <polygon points="58,30 24,78 78,78" fill="#168be9"/>
+                  <polygon points="162,30 142,78 196,78" fill="#5359e5"/>
+                  <polygon points="24,78 46,138 78,78" fill="#0b58c8"/>
+                  <polygon points="196,78 174,138 142,78" fill="#2939bc"/>
+                  <polygon points="46,138 82,188 110,126" fill="#0b2c87"/>
+                  <polygon points="174,138 138,188 110,126" fill="#151f7d"/>
+                  <polygon points="82,188 138,188 110,126" fill="#0a1a61"/>
+                  <polygon points="78,78 46,138 110,126" fill="url(#f2)"/>
+                  <polygon points="142,78 110,126 174,138" fill="url(#f4)"/>
+                  <polygon points="78,78 110,126 142,78" fill="url(#centerFace)"/>
+                </g>
+              </svg>
+              <div class="answer-face-text"><span id="answerText">SHAKE<br>ME!</span></div>
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="shake-callout" aria-hidden="true">
+        <span class="phone-glyph">▯</span>
+        <span>Shake your iPad!</span>
       </div>
 
       <div class="prompt-block">
@@ -61,8 +99,10 @@
 
     <section class="learning-wrap">
       <button id="learningToggle" class="learning-toggle" type="button" aria-expanded="false" aria-controls="learningPanel">
-        <span>🔬 OPEN THE MAGIC LAB</span>
-        <span id="learningChevron" aria-hidden="true">⌄</span>
+        <span id="learningToggleLabel">🔬 OPEN THE MAGIC LAB</span>
+        <span class="chevron-shell" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M6 9.5 12 15l6-5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
       </button>
 
       <div id="learningPanel" class="learning-panel" hidden>
@@ -84,7 +124,6 @@
           <div id="answersEditor" class="answers-editor"></div>
           <div class="row-actions">
             <button id="addAnswerButton" class="small-button" type="button">＋ Add answer</button>
-            <button id="removeAnswerButton" class="small-button ghost" type="button">− Remove last</button>
           </div>
         </section>
 
@@ -94,10 +133,7 @@
             <button class="hint-button" type="button" data-hint="random" aria-label="What is a random number?">?</button>
           </div>
           <p class="code-line"><span class="code-key">RANDOM</span> number from <strong>0</strong> to <strong id="randomMaxLabel">11</strong></p>
-          <div class="number-demo">
-            <span>Last number:</span>
-            <strong id="lastRandomNumber">—</strong>
-          </div>
+          <div class="number-demo"><span>Last number:</span><strong id="lastRandomNumber">—</strong></div>
         </section>
 
         <section class="lab-card">
@@ -105,78 +141,30 @@
             <h3>3. IF → THEN → ELSE</h3>
             <button class="hint-button" type="button" data-hint="if" aria-label="What does IF THEN ELSE mean?">?</button>
           </div>
-
           <div class="rule-builder" aria-label="Rule builder">
-            <div class="rule-row">
-              <span class="rule-word if">IF</span>
-              <span>random number is</span>
-              <select id="operatorSelect" aria-label="Comparison">
-                <option value="lt">less than</option>
-                <option value="gt">greater than</option>
-                <option value="eq">equal to</option>
-              </select>
-              <input id="thresholdInput" type="number" inputmode="numeric" min="0" value="4" aria-label="Comparison number" />
-            </div>
-            <div class="rule-row">
-              <span class="rule-word then">THEN</span>
-              <span>choose from</span>
-              <select id="thenGroupSelect" aria-label="Then answer group">
-                <option value="yes">YES answers</option>
-                <option value="maybe">MAYBE answers</option>
-                <option value="no">NO answers</option>
-              </select>
-            </div>
-            <div class="rule-row">
-              <span class="rule-word else">ELSE</span>
-              <span>choose from all remaining answers</span>
-            </div>
+            <div class="rule-row"><span class="rule-word if">IF</span><span>random number is</span><select id="operatorSelect" aria-label="Comparison"><option value="lt">less than</option><option value="gt">greater than</option><option value="eq">equal to</option></select><input id="thresholdInput" type="number" inputmode="numeric" min="0" value="4" aria-label="Comparison number" /></div>
+            <div class="rule-row"><span class="rule-word then">THEN</span><span>choose from</span><select id="thenGroupSelect" aria-label="Then answer group"><option value="yes">YES answers</option><option value="maybe">MAYBE answers</option><option value="no">NO answers</option></select></div>
+            <div class="rule-row"><span class="rule-word else">ELSE</span><span>choose from all remaining answers</span></div>
           </div>
           <p id="ruleWarning" class="warning" role="status"></p>
         </section>
 
         <section class="lab-card compact-card">
-          <div class="lab-card-title">
-            <h3>4. Answer reveal time</h3>
-            <button class="hint-button" type="button" data-hint="timing" aria-label="What does reveal time mean?">?</button>
-          </div>
-          <label class="seconds-control" for="revealSeconds">
-            <span>Seconds</span>
-            <input id="revealSeconds" type="number" inputmode="decimal" min="1" max="10" step="0.5" value="4" />
-          </label>
+          <div class="lab-card-title"><h3>4. Answer reveal time</h3><button class="hint-button" type="button" data-hint="timing" aria-label="What does reveal time mean?">?</button></div>
+          <label class="seconds-control" for="revealSeconds"><span>Seconds</span><input id="revealSeconds" type="number" inputmode="decimal" min="1" max="10" step="0.5" value="4" /></label>
         </section>
 
         <section class="lab-card trace-card">
-          <div class="lab-card-title">
-            <h3>What happened last time?</h3>
-            <button class="hint-button" type="button" data-hint="trace" aria-label="What is this?">?</button>
-          </div>
-          <div id="traceBox" class="trace-box">
-            <div><span>RANDOM</span><strong>—</strong></div>
-            <div class="trace-arrow">↓</div>
-            <div><span>RULE</span><strong>Shake or tap ASK</strong></div>
-            <div class="trace-arrow">↓</div>
-            <div><span>ANSWER</span><strong>—</strong></div>
-          </div>
+          <div class="lab-card-title"><h3>What happened last time?</h3><button class="hint-button" type="button" data-hint="trace" aria-label="What is this?">?</button></div>
+          <div id="traceBox" class="trace-box"><div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div></div>
         </section>
 
-        <div class="reset-row">
-          <button id="resetButton" class="reset-button" type="button">↺ Reset to Defaults</button>
-          <p>Changes save automatically on this device.</p>
-        </div>
+        <div class="reset-row"><button id="resetButton" class="reset-button" type="button">↺ Reset to Defaults</button><p>Changes save automatically on this device.</p></div>
       </div>
     </section>
   </main>
 
-  <dialog id="hintDialog" class="hint-dialog">
-    <form method="dialog">
-      <button class="dialog-close" value="close" aria-label="Close hint">×</button>
-      <div id="hintIcon" class="hint-icon">💡</div>
-      <h2 id="hintTitle">Hint</h2>
-      <p id="hintText"></p>
-      <button class="primary-button dialog-ok" value="close">Got it!</button>
-    </form>
-  </dialog>
-
-  <script src="app.js" defer></script>
+  <dialog id="hintDialog" class="hint-dialog"><form method="dialog"><button class="dialog-close" value="close" aria-label="Close hint">×</button><div id="hintIcon" class="hint-icon">💡</div><h2 id="hintTitle">Hint</h2><p id="hintText"></p><button class="primary-button dialog-ok" value="close">Got it!</button></form></dialog>
+  <script src="app.js?v=2" defer></script>
 </body>
 </html>
