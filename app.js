@@ -6,6 +6,7 @@
   const SHAKE_COOLDOWN_MS = 1500;
   const MAX_ANSWERS = 30;
   const MIN_ANSWERS = 3;
+  const MAX_ANSWER_CHARS = 22;
 
   const DEFAULTS = {
     muted: false,
@@ -65,7 +66,7 @@
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (!saved || !Array.isArray(saved.answers)) return cloneDefaults();
       const merged = { ...cloneDefaults(), ...saved };
-      merged.answers = saved.answers.filter((answer) => answer && typeof answer.text === 'string').slice(0, MAX_ANSWERS).map((answer) => ({ text: answer.text.slice(0, 60) || 'Mystery answer!', group: ['yes','maybe','no'].includes(answer.group) ? answer.group : 'maybe' }));
+      merged.answers = saved.answers.filter((answer) => answer && typeof answer.text === 'string').slice(0, MAX_ANSWERS).map((answer) => ({ text: answer.text.slice(0, MAX_ANSWER_CHARS) || 'Mystery answer!', group: ['yes','maybe','no'].includes(answer.group) ? answer.group : 'maybe' }));
       if (merged.answers.length < MIN_ANSWERS) merged.answers = cloneDefaults().answers;
       merged.revealSeconds = clampNumber(merged.revealSeconds, 1, 10, 4);
       merged.threshold = clampNumber(merged.threshold, 0, merged.answers.length - 1, 4);
@@ -98,14 +99,28 @@
     settings.answers.forEach((answer, index) => {
       const row = document.createElement('div'); row.className = 'answer-row';
       const label = document.createElement('span'); label.className = 'answer-index'; label.textContent = `Answer[${index}]`;
-      const input = document.createElement('input'); input.type = 'text'; input.maxLength = 60; input.value = answer.text; input.setAttribute('aria-label', `Answer ${index} text`);
-      input.addEventListener('change', () => { settings.answers[index].text = input.value.trim() || `Answer ${index}`; input.value = settings.answers[index].text; saveSettings(); });
+      const inputWrap = document.createElement('div'); inputWrap.className = 'answer-input-wrap';
+      const input = document.createElement('input'); input.type = 'text'; input.maxLength = MAX_ANSWER_CHARS; input.value = answer.text; input.setAttribute('aria-label', `Answer ${index} text. Maximum ${MAX_ANSWER_CHARS} characters.`);
+      const counter = document.createElement('span'); counter.className = 'answer-char-count'; counter.textContent = `${input.value.length} / ${MAX_ANSWER_CHARS}`;
+      input.addEventListener('input', () => {
+        counter.textContent = `${input.value.length} / ${MAX_ANSWER_CHARS}`;
+        counter.classList.toggle('near-limit', input.value.length >= MAX_ANSWER_CHARS - 3);
+      });
+      input.addEventListener('change', () => {
+        settings.answers[index].text = input.value.trim().slice(0, MAX_ANSWER_CHARS) || `Answer ${index}`;
+        input.value = settings.answers[index].text;
+        counter.textContent = `${input.value.length} / ${MAX_ANSWER_CHARS}`;
+        counter.classList.toggle('near-limit', input.value.length >= MAX_ANSWER_CHARS - 3);
+        saveSettings();
+      });
+      counter.classList.toggle('near-limit', input.value.length >= MAX_ANSWER_CHARS - 3);
+      inputWrap.append(input,counter);
       const select = document.createElement('select'); select.setAttribute('aria-label', `Answer ${index} group`);
       [['yes','YES'],['maybe','MAYBE'],['no','NO']].forEach(([value,text]) => { const option = document.createElement('option'); option.value=value; option.textContent=text; option.selected=answer.group===value; select.append(option); });
       select.addEventListener('change', () => { settings.answers[index].group = select.value; saveSettings(); validateRule(); });
       const remove = document.createElement('button'); remove.type='button'; remove.className='delete-answer'; remove.setAttribute('aria-label', `Delete Answer ${index}`); remove.title='Delete this answer'; remove.disabled = settings.answers.length <= MIN_ANSWERS; remove.append(trashIcon());
       remove.addEventListener('click', () => deleteAnswer(index));
-      row.append(label,input,select,remove); els.answersEditor.append(row);
+      row.append(label,inputWrap,select,remove); els.answersEditor.append(row);
     });
     els.addAnswerButton.disabled = settings.answers.length >= MAX_ANSWERS;
   }
