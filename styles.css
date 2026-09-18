@@ -90,9 +90,9 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 .bubble { position:absolute; border:1px solid rgba(186,239,255,.46); border-radius:50%; opacity:.36; z-index:2; }
 .b1{left:18%;top:59%;width:11px;height:11px}.b2{right:24%;top:22%;width:8px;height:8px}.b3{right:15%;top:68%;width:6px;height:6px}.b4{left:28%;top:30%;width:5px;height:5px}
 
-.polyhedron { position:absolute; width:78%; height:74%; left:11%; top:13%; z-index:4; transform-origin:50% 53%; filter:drop-shadow(0 13px 17px rgba(0,0,0,.48)); opacity:0; visibility:hidden; }
+.polyhedron { position:absolute; width:78%; height:74%; left:11%; top:13%; z-index:4; transform-origin:50% 53%; filter:drop-shadow(0 13px 17px rgba(0,0,0,.48)); opacity:0; pointer-events:none; }
 .ball.is-mixing .polyhedron,
-.ball.is-revealed .polyhedron { opacity:1; visibility:visible; }
+.ball.is-revealed .polyhedron { opacity:1; }
 .die-svg { width:100%; height:100%; overflow:visible; display:block; }
 .die-body { transform-origin: 50% 50%; }
 .ico-face { vector-effect: non-scaling-stroke; }
@@ -100,11 +100,14 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 .ico-face.mid { opacity:.9; }
 .ico-face.near { opacity:.98; }
 .answer-triangle { filter: drop-shadow(0 2px 2px rgba(3,12,55,.35)); }
-.answer-svg-text {
-  fill:#fff;
+.answer-svg-text,
+.answer-svg-measure {
   font-family:ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-weight:1000;
   letter-spacing:0;
+}
+.answer-svg-text {
+  fill:#fff;
   paint-order:stroke fill;
   stroke:rgba(0,0,0,.48);
   stroke-width:.72px;
@@ -112,7 +115,9 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
   opacity:0;
   pointer-events:none;
 }
-.answer-svg-text tspan { dominant-baseline:middle; }
+.answer-svg-text tspan,
+.answer-svg-measure tspan { dominant-baseline:middle; }
+.answer-svg-measure { fill:#fff; stroke:none; opacity:0; pointer-events:none; }
 .ball.is-mixing .answer-svg-text { opacity:0; }
 .ball.is-revealed .answer-svg-text { animation:answer-fade 1.55s ease-out both; }
 .ball.is-revealed .ico-face:not(.answer-triangle) { opacity:0; }
@@ -201,3 +206,11 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 .permission-card > p:not(.eyebrow):not(.permission-note) { margin:0 auto 18px; max-width:31ch; color:#e5e0ff; line-height:1.45; }
 .permission-button { width:100%; min-height:54px; font-size:1.05rem; }
 .permission-note { margin:12px 0 0; color:#bdb5dd; font-size:.76rem; line-height:1.35; }
+
+.answer-input-wrap.invalid input {
+  border-color: rgba(255,111,145,.78);
+  box-shadow: 0 0 0 2px rgba(255,111,145,.12);
+}
+.answer-char-count.invalid {
+  color: var(--danger);
+}

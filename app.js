@@ -7,15 +7,19 @@
   const MAX_ANSWERS = 30;
   const MIN_ANSWERS = 3;
   const MAX_ANSWER_CHARS = 22;
-  const MAX_WORD_CHARS = 12;
+  const MAX_WORD_CHARS = 11;
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const FACE = {
-    topLeft: { x: 37.7, y: 81.2 },
-    topRight: { x: 158.1, y: 88.7 },
-    bottom: { x: 91.7, y: 185.0 },
-    centerX: 95.83,
-    centerY: 113.5,
-    padding: 9
+    points: [
+      { x: 35.805, y: 84.876 },
+      { x: 156.438, y: 84.877 },
+      { x: 96.153, y: 185.118 }
+    ],
+    centerX: 96.132,
+    centerY: 118.291,
+    margin: 8,
+    minFontSize: 7,
+    maxFontSize: 22
   };
 
   const DEFAULTS = {
@@ -50,7 +54,7 @@
 
   const $ = (id) => document.getElementById(id);
   const els = {
-    ball: $('ball'), answerText: $('answerText'), statusText: $('statusText'), motionHelp: $('motionHelp'), soundToggle: $('soundToggle'), permissionGate: $('permissionGate'), permissionButton: $('permissionButton'), permissionNote: $('permissionNote'),
+    ball: $('ball'), answerText: $('answerText'), answerMeasure: $('answerMeasure'), statusText: $('statusText'), motionHelp: $('motionHelp'), soundToggle: $('soundToggle'), permissionGate: $('permissionGate'), permissionButton: $('permissionButton'), permissionNote: $('permissionNote'),
     learningToggle: $('learningToggle'), learningToggleLabel: $('learningToggleLabel'), learningPanel: $('learningPanel'), answersEditor: $('answersEditor'), answerCountLabel: $('answerCountLabel'), rangeLabel: $('rangeLabel'), randomMaxLabel: $('randomMaxLabel'), lastRandomNumber: $('lastRandomNumber'),
     operatorSelect: $('operatorSelect'), thresholdInput: $('thresholdInput'), thenGroupSelect: $('thenGroupSelect'), revealSeconds: $('revealSeconds'), ruleWarning: $('ruleWarning'), traceBox: $('traceBox'), addAnswerButton: $('addAnswerButton'), resetButton: $('resetButton'),
     hintDialog: $('hintDialog'), hintIcon: $('hintIcon'), hintTitle: $('hintTitle'), hintText: $('hintText')
@@ -126,13 +130,27 @@
       input.addEventListener('input', () => {
         const cleaned=sanitizeAnswerText(input.value);
         if(cleaned.text!==input.value) input.value=cleaned.text;
-        counter.textContent = cleaned.wordTrimmed ? `max ${MAX_WORD_CHARS}/word` : `${input.value.length} / ${MAX_ANSWER_CHARS}`;
-        counter.classList.toggle('near-limit', cleaned.wordTrimmed || input.value.length >= MAX_ANSWER_CHARS - 3);
+        const candidate=input.value.trim();
+        const fits=!candidate || canAnswerFit(candidate);
+        inputWrap.classList.toggle('invalid',!fits);
+        counter.classList.toggle('invalid',!fits);
+        counter.classList.toggle('near-limit', fits && (cleaned.wordTrimmed || input.value.length >= MAX_ANSWER_CHARS - 3));
+        counter.textContent = !fits ? 'won\'t fit' : cleaned.wordTrimmed ? `max ${MAX_WORD_CHARS}/word` : `${input.value.length} / ${MAX_ANSWER_CHARS}`;
       });
       input.addEventListener('change', () => {
-        settings.answers[index].text = sanitizeAnswerText(input.value.trim()).text || `Answer ${index}`;
-        input.value = settings.answers[index].text;
-        counter.textContent = `${input.value.length} / ${MAX_ANSWER_CHARS}`;
+        const candidate=sanitizeAnswerText(input.value.trim()).text;
+        if(!candidate || !canAnswerFit(candidate)){
+          input.value=settings.answers[index].text;
+          inputWrap.classList.remove('invalid');
+          counter.classList.remove('invalid');
+          counter.textContent=`${input.value.length} / ${MAX_ANSWER_CHARS}`;
+          return;
+        }
+        settings.answers[index].text=candidate;
+        input.value=candidate;
+        inputWrap.classList.remove('invalid');
+        counter.classList.remove('invalid');
+        counter.textContent=`${input.value.length} / ${MAX_ANSWER_CHARS}`;
         counter.classList.toggle('near-limit', input.value.length >= MAX_ANSWER_CHARS - 3);
         saveSettings();
       });
@@ -164,18 +182,32 @@
   function formatCondition(number){const symbol=settings.operator==='gt'?'>':settings.operator==='eq'?'=':'<';return `${number} ${symbol} ${settings.threshold}`;}
   function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 
-  function faceBoundsAtY(y){
-    const leftRatio=(y-FACE.topLeft.y)/(FACE.bottom.y-FACE.topLeft.y);
-    const rightRatio=(y-FACE.topRight.y)/(FACE.bottom.y-FACE.topRight.y);
-    const left=FACE.topLeft.x+(FACE.bottom.x-FACE.topLeft.x)*leftRatio;
-    const right=FACE.topRight.x+(FACE.bottom.x-FACE.topRight.x)*rightRatio;
-    return { left, right, width:right-left };
+  function edgeDistance(point,a,b){
+    const dx=b.x-a.x;
+    const dy=b.y-a.y;
+    return (dx*(point.y-a.y)-dy*(point.x-a.x))/Math.hypot(dx,dy);
+  }
+
+  function bboxInsideFace(box,margin=FACE.margin){
+    const corners=[
+      {x:box.x,y:box.y},
+      {x:box.x+box.width,y:box.y},
+      {x:box.x+box.width,y:box.y+box.height},
+      {x:box.x,y:box.y+box.height}
+    ];
+    const [a,b,c]=FACE.points;
+    return corners.every((point)=>
+      edgeDistance(point,a,b)>=margin &&
+      edgeDistance(point,b,c)>=margin &&
+      edgeDistance(point,c,a)>=margin
+    );
   }
 
   function buildLineLayouts(words){
     const layouts=[];
     const seen=new Set();
     const add=(lines)=>{
+      if(!lines.length||lines.length>3||lines.some((line)=>!line)) return;
       const key=lines.join('|');
       if(!seen.has(key)){seen.add(key);layouts.push(lines);}
     };
@@ -195,15 +227,15 @@
         }
       }
     }
-    return layouts.filter((lines)=>lines.length<=3&&lines.every(Boolean));
+    return layouts;
   }
 
-  function drawSvgAnswerLines(lines,fontSize){
-    els.answerText.replaceChildren();
-    els.answerText.setAttribute('font-size',String(fontSize));
+  function drawSvgLines(target,lines,fontSize,centerY){
+    target.replaceChildren();
+    target.setAttribute('font-size',String(fontSize));
+    const lineHeight=fontSize*1.04;
+    const startY=centerY-((lines.length-1)*lineHeight)/2;
 
-    const lineHeight=fontSize*1.02;
-    const startY=FACE.centerY-((lines.length-1)*lineHeight)/2;
     return lines.map((line,index)=>{
       const tspan=document.createElementNS(SVG_NS,'tspan');
       tspan.setAttribute('x',String(FACE.centerX));
@@ -211,49 +243,69 @@
       tspan.setAttribute('text-anchor','middle');
       tspan.setAttribute('dominant-baseline','middle');
       tspan.textContent=line.toUpperCase();
-      els.answerText.append(tspan);
+      target.append(tspan);
       return tspan;
     });
   }
 
-  function svgLayoutFits(tspans,fontSize){
+  function tspansFitFace(tspans){
     return tspans.every((tspan)=>{
-      const y=Number(tspan.getAttribute('y'));
-      // The triangle narrows toward its point. Test width at the lower edge
-      // of each line, then keep an additional safety margin on both sides.
-      const lowerY=y+fontSize*.5;
-      const bounds=faceBoundsAtY(lowerY);
-      const available=Math.max(0,bounds.width-FACE.padding*2);
-      const measured=tspan.getComputedTextLength();
-      return measured<=available;
+      try{
+        return bboxInsideFace(tspan.getBBox());
+      }catch{
+        return false;
+      }
     });
   }
 
-  function fitAnswerText(text){
+  function centerCandidates(){
+    return [0,-3,3,-6,6,-9,9].map((offset)=>({y:FACE.centerY+offset,offset}));
+  }
+
+  function findAnswerLayout(text,{minimumOnly=false}={}){
     const words=String(text).trim().split(/\s+/).filter(Boolean);
-    if(!words.length){els.answerText.replaceChildren();return;}
+    if(!words.length) return null;
 
     const layouts=buildLineLayouts(words);
     let best=null;
+    const sizes=minimumOnly
+      ? [FACE.minFontSize]
+      : Array.from({length:FACE.maxFontSize-FACE.minFontSize+1},(_,i)=>FACE.maxFontSize-i);
 
-    for(const lines of layouts){
-      for(let size=22;size>=6;size-=.5){
-        const tspans=drawSvgAnswerLines(lines,size);
-        if(svgLayoutFits(tspans,size)){
-          const score=size-(lines.length-1)*1.15;
-          if(!best||score>best.score){
-            best={lines:[...lines],size,score};
+    for(const size of sizes){
+      for(const lines of layouts){
+        for(const center of centerCandidates()){
+          const tspans=drawSvgLines(els.answerMeasure,lines,size,center.y);
+          if(!tspansFitFace(tspans)) continue;
+
+          const score=size-(lines.length-1)*3-Math.abs(center.offset)*.04;
+          const candidate={lines:[...lines],size,centerY:center.y,score};
+          if(minimumOnly) return candidate;
+          if(!best||candidate.score>best.score||
+             (candidate.score===best.score&&candidate.lines.length<best.lines.length)){
+            best=candidate;
           }
-          break;
         }
       }
     }
+    return best;
+  }
 
-    if(!best){
-      best={lines:words.slice(0,3),size:6,score:0};
+  function canAnswerFit(text){
+    return Boolean(findAnswerLayout(text,{minimumOnly:true}));
+  }
+
+  function fitAnswerText(text){
+    const layout=findAnswerLayout(text);
+    if(!layout){
+      // Never display malformed/out-of-bounds text. This should only be
+      // reachable for legacy saved data from an older app version.
+      const fallback=findAnswerLayout('MAYBE');
+      if(fallback) drawSvgLines(els.answerText,fallback.lines,fallback.size,fallback.centerY);
+      return false;
     }
-
-    drawSvgAnswerLines(best.lines,best.size);
+    drawSvgLines(els.answerText,layout.lines,layout.size,layout.centerY);
+    return true;
   }
 
   function updateTrace(result){
@@ -286,10 +338,12 @@
       els.ball.classList.remove('is-mixing');
       void els.ball.offsetWidth;
       els.ball.classList.add('is-revealed');
-      fitAnswerText(result.answer.text);
+      const displayed=fitAnswerText(result.answer.text);
       fadeMixingAudio(ANSWER_FADE_MS/1000);
       updateTrace(result);
-      els.statusText.textContent=`Answer[${result.answerIndex}] says: “${result.answer.text}”`;
+      els.statusText.textContent=displayed
+        ? `Answer[${result.answerIndex}] says: “${result.answer.text}”`
+        : 'That saved answer no longer fits, so the 8 Ball used MAYBE instead.';
 
       finishTimer=setTimeout(()=>{
         busy=false;
@@ -485,6 +539,19 @@
     }
   }
 
+  function runAnswerLayoutSelfTest(){
+    const cases=[
+      ...DEFAULTS.answers.map((answer)=>answer.text),
+      'WWWWWWWWWWW',
+      'MMMMMMMMMMM',
+      'WITHOUT A DOUBT!',
+      'DEFINITELY YES!',
+      'VERY VERY POSSIBLE'
+    ];
+    const failures=cases.filter((text)=>!canAnswerFit(text));
+    if(failures.length) console.error('Magic 8 Ball answer layout self-test failed:',failures);
+  }
+
   function requestShakeOnLoad(){
     // Browsers that do not require a permission gesture can start immediately.
     if('DeviceMotionEvent'in window && typeof DeviceMotionEvent.requestPermission!=='function'){
@@ -517,5 +584,6 @@
 
   if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch((error)=>console.warn('Service worker:',error)));}
   render();
+  runAnswerLayoutSelfTest();
   requestShakeOnLoad();
 })();
