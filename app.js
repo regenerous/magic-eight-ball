@@ -121,6 +121,16 @@
   function formatCondition(number){const symbol=settings.operator==='gt'?'>':settings.operator==='eq'?'=':'<';return `${number} ${symbol} ${settings.threshold}`;}
   function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 
+  function fitAnswerText(text){
+    const length=String(text).trim().length;
+    let size='clamp(.68rem,3vw,1.08rem)';
+    if(length>12) size='clamp(.61rem,2.7vw,.98rem)';
+    if(length>18) size='clamp(.54rem,2.35vw,.88rem)';
+    if(length>25) size='clamp(.47rem,2.05vw,.78rem)';
+    if(length>34) size='clamp(.41rem,1.8vw,.69rem)';
+    els.answerText.style.fontSize=size;
+  }
+
   function updateTrace(result){
     const truthWord=result.conditionTrue?'TRUE':'FALSE';
     const path=result.conditionTrue?`${formatCondition(result.randomNumber)} is ${truthWord} → THEN ${settings.thenGroup.toUpperCase()}`:`${formatCondition(result.randomNumber)} is ${truthWord} → ELSE remaining answers`;
@@ -144,6 +154,7 @@
     revealTimer=setTimeout(()=>{
       els.ball.classList.remove('is-mixing');
       void els.ball.offsetWidth;
+      fitAnswerText(result.answer.text);
       els.answerText.textContent=result.answer.text;
       els.ball.classList.add('is-revealed');
       updateTrace(result);
@@ -174,7 +185,7 @@
   function addAnswer(){if(settings.answers.length>=MAX_ANSWERS)return;settings.answers.push({text:'New answer!',group:'maybe'});settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
   function deleteAnswer(index){if(settings.answers.length<=MIN_ANSWERS)return;settings.answers.splice(index,1);settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
 
-  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.innerHTML='SHAKE<br>ME!';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
+  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.innerHTML='SHAKE<br>ME!';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
   els.askButton.addEventListener('click',()=>askMagicEightBall('button'));els.enableShakeButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);

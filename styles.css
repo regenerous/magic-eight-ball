@@ -90,7 +90,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 .bubble { position:absolute; border:1px solid rgba(186,239,255,.46); border-radius:50%; opacity:.36; z-index:2; }
 .b1{left:18%;top:59%;width:11px;height:11px}.b2{right:24%;top:22%;width:8px;height:8px}.b3{right:15%;top:68%;width:6px;height:6px}.b4{left:28%;top:30%;width:5px;height:5px}
 
-.polyhedron { position:absolute; width:68%; height:64%; left:16%; top:18%; z-index:4; transform-origin:50% 53%; filter:drop-shadow(0 13px 17px rgba(0,0,0,.48)); }
+.polyhedron { position:absolute; width:78%; height:74%; left:11%; top:13%; z-index:4; transform-origin:50% 53%; filter:drop-shadow(0 13px 17px rgba(0,0,0,.48)); }
 .die-svg { width:100%; height:100%; overflow:visible; display:block; }
 .die-body { transform-origin: 50% 50%; }
 .ico-face { vector-effect: non-scaling-stroke; }
@@ -98,9 +98,12 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 .ico-face.mid { opacity:.9; }
 .ico-face.near { opacity:.98; }
 .answer-triangle { filter: drop-shadow(0 2px 2px rgba(3,12,55,.35)); }
-.answer-face-text { position:absolute; left:23%; top:43%; width:46%; height:24%; display:flex; align-items:center; justify-content:center; padding:2px 4px; color:white; text-align:center; font-size:clamp(.55rem,2.55vw,.98rem); line-height:1.02; font-weight:1000; text-transform:uppercase; letter-spacing:.01em; text-shadow:0 2px 3px rgba(0,0,0,.55); opacity:1; transition:opacity .22s ease; z-index:6; }
+.answer-face-text { position:absolute; left:22%; top:42%; width:47%; height:27%; display:flex; align-items:center; justify-content:center; padding:2px 5px; color:white; text-align:center; font-size:clamp(.58rem,2.65vw,1rem); line-height:1.01; font-weight:1000; text-transform:uppercase; letter-spacing:.005em; text-shadow:0 2px 3px rgba(0,0,0,.55); opacity:1; transition:opacity .22s ease; z-index:6; overflow:hidden; }
+.answer-face-text span { display:block; max-width:100%; text-wrap:balance; }
 .ball.is-mixing .answer-face-text { opacity:0; }
 .ball.is-revealed .answer-face-text { opacity:1; animation:answer-pop .46s cubic-bezier(.2,.9,.2,1.25); }
+.ball.is-revealed .ico-face:not(.answer-triangle) { opacity:0; }
+.ball.is-revealed .answer-triangle { opacity:1; stroke-opacity:.72; filter:drop-shadow(0 4px 7px rgba(1,9,45,.46)); }
 
 .ball.is-mixing { animation:ball-jostle .7s ease-in-out infinite; }
 .ball.is-mixing .polyhedron { animation:die-tumble 1.15s cubic-bezier(.4,0,.6,1) infinite; }
@@ -121,7 +124,7 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 @keyframes liquid-swish-c { from{transform:translateX(-8%) rotate(-9deg)} to{transform:translateX(10%) rotate(8deg)} }
 @keyframes liquid-glow { from{transform:translate(-9%,2%) scale(.9);opacity:.4} to{transform:translate(10%,-3%) scale(1.1);opacity:.9} }
 @keyframes bubble-drift { from{transform:translate(0,8px)} to{transform:translate(8px,-10px)} }
-@keyframes surface-answer { 0%{transform:translate(4%,15%) rotate(-9deg) scale(.8);filter:blur(1px)} 65%{transform:translate(-1%,-4%) rotate(2deg) scale(1.08);filter:blur(0)} 100%{transform:translate(0,-3%) rotate(0) scale(1.06);filter:blur(0)} }
+@keyframes surface-answer { 0%{transform:translate(4%,15%) rotate(-9deg) scale(.82);filter:blur(1px)} 65%{transform:translate(6%,-5%) rotate(2deg) scale(1.34);filter:blur(0)} 100%{transform:translate(7%,-5%) rotate(0) scale(1.3);filter:blur(0)} }
 @keyframes settle-wave { from{opacity:.56;transform:rotate(-10deg) scale(1.08)} to{opacity:.23;transform:rotate(-2deg) scale(1)} }
 @keyframes settle-wave2 { from{opacity:.4;transform:rotate(11deg) scale(1.08)} to{opacity:.18;transform:rotate(3deg) scale(1)} }
 @keyframes answer-pop { 0%{transform:scale(.74);opacity:0} 100%{transform:scale(1);opacity:1} }
