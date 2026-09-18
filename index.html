@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=11" />
   <title>Magic Eight Ball</title>
 </head>
 <body>
@@ -89,11 +89,10 @@
                   <polygon class="ico-face near" points="111.0,15.0 158.1,88.7 37.7,81.2" fill="url(#icoLight)"/>
                   <polygon class="ico-face answer-triangle" points="91.7,185.0 158.1,88.7 37.7,81.2" fill="url(#icoFront)"/>
                 </g>
+                <text id="answerText" class="answer-svg-text" x="95.83" y="113.5" text-anchor="middle" transform="rotate(3.564 95.83 113.5)" aria-hidden="true"></text>
               </svg>
-              <div class="answer-face-overlay">
-                <div class="answer-face-text"><span id="answerText">SHAKE<br>ME!</span></div>
-              </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -188,6 +187,6 @@
   </div>
 
   <dialog id="hintDialog" class="hint-dialog"><form method="dialog"><button class="dialog-close" value="close" aria-label="Close hint">×</button><div id="hintIcon" class="hint-icon">💡</div><h2 id="hintTitle">Hint</h2><p id="hintText"></p><button class="primary-button dialog-ok" value="close">Got it!</button></form></dialog>
-  <script src="app.js?v=9" defer></script>
+  <script src="app.js?v=10" defer></script>
 </body>
 </html>

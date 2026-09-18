@@ -7,6 +7,16 @@
   const MAX_ANSWERS = 30;
   const MIN_ANSWERS = 3;
   const MAX_ANSWER_CHARS = 22;
+  const MAX_WORD_CHARS = 12;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const FACE = {
+    topLeft: { x: 37.7, y: 81.2 },
+    topRight: { x: 158.1, y: 88.7 },
+    bottom: { x: 91.7, y: 185.0 },
+    centerX: 95.83,
+    centerY: 113.5,
+    padding: 9
+  };
 
   const DEFAULTS = {
     muted: false,
@@ -61,12 +71,23 @@
   function cloneDefaults() { return JSON.parse(JSON.stringify(DEFAULTS)); }
   function clampNumber(value, min, max, fallback) { const number = Number(value); return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback; }
 
+  function sanitizeAnswerText(value) {
+    const parts=String(value).slice(0,MAX_ANSWER_CHARS).split(/(\s+)/);
+    let wordTrimmed=false;
+    const text=parts.map((part)=>{
+      if(/^\s+$/.test(part)) return part;
+      if(part.length>MAX_WORD_CHARS){wordTrimmed=true;return part.slice(0,MAX_WORD_CHARS);}
+      return part;
+    }).join('').slice(0,MAX_ANSWER_CHARS);
+    return { text, wordTrimmed };
+  }
+
   function loadSettings() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (!saved || !Array.isArray(saved.answers)) return cloneDefaults();
       const merged = { ...cloneDefaults(), ...saved };
-      merged.answers = saved.answers.filter((answer) => answer && typeof answer.text === 'string').slice(0, MAX_ANSWERS).map((answer) => ({ text: answer.text.slice(0, MAX_ANSWER_CHARS) || 'Mystery answer!', group: ['yes','maybe','no'].includes(answer.group) ? answer.group : 'maybe' }));
+      merged.answers = saved.answers.filter((answer) => answer && typeof answer.text === 'string').slice(0, MAX_ANSWERS).map((answer) => ({ text: sanitizeAnswerText(answer.text).text || 'Mystery answer!', group: ['yes','maybe','no'].includes(answer.group) ? answer.group : 'maybe' }));
       if (merged.answers.length < MIN_ANSWERS) merged.answers = cloneDefaults().answers;
       merged.revealSeconds = clampNumber(merged.revealSeconds, 1, 10, 4);
       merged.threshold = clampNumber(merged.threshold, 0, merged.answers.length - 1, 4);
@@ -103,11 +124,13 @@
       const input = document.createElement('input'); input.type = 'text'; input.maxLength = MAX_ANSWER_CHARS; input.value = answer.text; input.setAttribute('aria-label', `Answer ${index} text. Maximum ${MAX_ANSWER_CHARS} characters.`);
       const counter = document.createElement('span'); counter.className = 'answer-char-count'; counter.textContent = `${input.value.length} / ${MAX_ANSWER_CHARS}`;
       input.addEventListener('input', () => {
-        counter.textContent = `${input.value.length} / ${MAX_ANSWER_CHARS}`;
-        counter.classList.toggle('near-limit', input.value.length >= MAX_ANSWER_CHARS - 3);
+        const cleaned=sanitizeAnswerText(input.value);
+        if(cleaned.text!==input.value) input.value=cleaned.text;
+        counter.textContent = cleaned.wordTrimmed ? `max ${MAX_WORD_CHARS}/word` : `${input.value.length} / ${MAX_ANSWER_CHARS}`;
+        counter.classList.toggle('near-limit', cleaned.wordTrimmed || input.value.length >= MAX_ANSWER_CHARS - 3);
       });
       input.addEventListener('change', () => {
-        settings.answers[index].text = input.value.trim().slice(0, MAX_ANSWER_CHARS) || `Answer ${index}`;
+        settings.answers[index].text = sanitizeAnswerText(input.value.trim()).text || `Answer ${index}`;
         input.value = settings.answers[index].text;
         counter.textContent = `${input.value.length} / ${MAX_ANSWER_CHARS}`;
         counter.classList.toggle('near-limit', input.value.length >= MAX_ANSWER_CHARS - 3);
@@ -141,39 +164,96 @@
   function formatCondition(number){const symbol=settings.operator==='gt'?'>':settings.operator==='eq'?'=':'<';return `${number} ${symbol} ${settings.threshold}`;}
   function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 
-  function fitAnswerText(text){
-    const value=String(text).trim();
-    const words=value.split(/\s+/).filter(Boolean);
-    const length=value.length;
-    const longestWord=words.reduce((max,word)=>Math.max(max,word.length),0);
-    const singleWord=words.length===1;
+  function faceBoundsAtY(y){
+    const leftRatio=(y-FACE.topLeft.y)/(FACE.bottom.y-FACE.topLeft.y);
+    const rightRatio=(y-FACE.topRight.y)/(FACE.bottom.y-FACE.topRight.y);
+    const left=FACE.topLeft.x+(FACE.bottom.x-FACE.topLeft.x)*leftRatio;
+    const right=FACE.topRight.x+(FACE.bottom.x-FACE.topRight.x)*rightRatio;
+    return { left, right, width:right-left };
+  }
 
-    els.answerText.style.whiteSpace=singleWord?'nowrap':'normal';
+  function buildLineLayouts(words){
+    const layouts=[];
+    const seen=new Set();
+    const add=(lines)=>{
+      const key=lines.join('|');
+      if(!seen.has(key)){seen.add(key);layouts.push(lines);}
+    };
 
-    let size=20;
-    if(length>9) size=18;
-    if(length>14) size=16;
-    if(length>20) size=14;
-    if(length>28) size=12;
-    if(length>36) size=10.5;
-    if(length>46) size=9;
-    if(longestWord>9) size=Math.min(size,13);
-    if(longestWord>12) size=Math.min(size,10.5);
-
-    els.answerText.style.fontSize=`${size}px`;
-    els.answerText.style.lineHeight='1';
-
-    let tries=0;
-    while(
-      (els.answerText.scrollWidth>els.answerText.clientWidth+1 ||
-       els.answerText.scrollHeight>els.answerText.clientHeight+1) &&
-      size>5 &&
-      tries<50
-    ){
-      size-=0.5;
-      els.answerText.style.fontSize=`${size}px`;
-      tries+=1;
+    add([words.join(' ')]);
+    for(let i=1;i<words.length;i+=1){
+      add([words.slice(0,i).join(' '),words.slice(i).join(' ')]);
     }
+    if(words.length>=3){
+      for(let i=1;i<words.length-1;i+=1){
+        for(let j=i+1;j<words.length;j+=1){
+          add([
+            words.slice(0,i).join(' '),
+            words.slice(i,j).join(' '),
+            words.slice(j).join(' ')
+          ]);
+        }
+      }
+    }
+    return layouts.filter((lines)=>lines.length<=3&&lines.every(Boolean));
+  }
+
+  function drawSvgAnswerLines(lines,fontSize){
+    els.answerText.replaceChildren();
+    els.answerText.setAttribute('font-size',String(fontSize));
+
+    const lineHeight=fontSize*1.02;
+    const startY=FACE.centerY-((lines.length-1)*lineHeight)/2;
+    return lines.map((line,index)=>{
+      const tspan=document.createElementNS(SVG_NS,'tspan');
+      tspan.setAttribute('x',String(FACE.centerX));
+      tspan.setAttribute('y',String(startY+index*lineHeight));
+      tspan.setAttribute('text-anchor','middle');
+      tspan.setAttribute('dominant-baseline','middle');
+      tspan.textContent=line.toUpperCase();
+      els.answerText.append(tspan);
+      return tspan;
+    });
+  }
+
+  function svgLayoutFits(tspans,fontSize){
+    return tspans.every((tspan)=>{
+      const y=Number(tspan.getAttribute('y'));
+      // The triangle narrows toward its point. Test width at the lower edge
+      // of each line, then keep an additional safety margin on both sides.
+      const lowerY=y+fontSize*.5;
+      const bounds=faceBoundsAtY(lowerY);
+      const available=Math.max(0,bounds.width-FACE.padding*2);
+      const measured=tspan.getComputedTextLength();
+      return measured<=available;
+    });
+  }
+
+  function fitAnswerText(text){
+    const words=String(text).trim().split(/\s+/).filter(Boolean);
+    if(!words.length){els.answerText.replaceChildren();return;}
+
+    const layouts=buildLineLayouts(words);
+    let best=null;
+
+    for(const lines of layouts){
+      for(let size=22;size>=6;size-=.5){
+        const tspans=drawSvgAnswerLines(lines,size);
+        if(svgLayoutFits(tspans,size)){
+          const score=size-(lines.length-1)*1.15;
+          if(!best||score>best.score){
+            best={lines:[...lines],size,score};
+          }
+          break;
+        }
+      }
+    }
+
+    if(!best){
+      best={lines:words.slice(0,3),size:6,score:0};
+    }
+
+    drawSvgAnswerLines(best.lines,best.size);
   }
 
   function updateTrace(result){
@@ -197,7 +277,7 @@
 
     els.ball.classList.remove('is-revealed','is-mixing');
     void els.ball.offsetWidth;
-    els.answerText.textContent='';
+    els.answerText.replaceChildren();
     els.statusText.textContent='Shake detected! Mixing the answers…';
     els.ball.classList.add('is-mixing');
     startMixingAudio();
@@ -205,12 +285,8 @@
     revealTimer=setTimeout(()=>{
       els.ball.classList.remove('is-mixing');
       void els.ball.offsetWidth;
-      els.answerText.textContent=result.answer.text;
-      els.answerText.style.overflowWrap='normal';
-      els.answerText.style.wordBreak='keep-all';
-      els.answerText.style.whiteSpace=result.answer.text.trim().includes(' ')?'normal':'nowrap';
-      fitAnswerText(result.answer.text);
       els.ball.classList.add('is-revealed');
+      fitAnswerText(result.answer.text);
       fadeMixingAudio(ANSWER_FADE_MS/1000);
       updateTrace(result);
       els.statusText.textContent=`Answer[${result.answerIndex}] says: “${result.answer.text}”`;
@@ -427,7 +503,7 @@
   function addAnswer(){if(settings.answers.length>=MAX_ANSWERS)return;settings.answers.push({text:'New answer!',group:'maybe'});settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
   function deleteAnswer(index){if(settings.answers.length<=MIN_ANSWERS)return;settings.answers.splice(index,1);settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
 
-  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.style.whiteSpace='';els.answerText.textContent='';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
+  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.replaceChildren();els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
   els.permissionButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);

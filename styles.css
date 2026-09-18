@@ -100,54 +100,21 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 .ico-face.mid { opacity:.9; }
 .ico-face.near { opacity:.98; }
 .answer-triangle { filter: drop-shadow(0 2px 2px rgba(3,12,55,.35)); }
-.answer-face-overlay {
-  position:absolute;
-  left:17.14%;
-  top:40.6%;
-  width:54.73%;
-  height:51.9%;
-  pointer-events:none;
-  overflow:hidden;
-  clip-path:polygon(0 0, 100% 7.23%, 44.85% 100%);
-  -webkit-clip-path:polygon(0 0, 100% 7.23%, 44.85% 100%);
-  opacity:1;
-  z-index:7;
-}
-.answer-face-text {
-  position:relative;
-  width:100%;
-  height:100%;
-  color:white;
-  text-align:center;
+.answer-svg-text {
+  fill:#fff;
+  font-family:ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-weight:1000;
-  text-transform:uppercase;
   letter-spacing:0;
-  text-shadow:0 2px 3px rgba(0,0,0,.6);
-  overflow:hidden;
+  paint-order:stroke fill;
+  stroke:rgba(0,0,0,.48);
+  stroke-width:.72px;
+  stroke-linejoin:round;
+  opacity:0;
+  pointer-events:none;
 }
-.answer-face-text span {
-  position:absolute;
-  left:20%;
-  top:17%;
-  width:60%;
-  height:38%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  line-height:1;
-  white-space:normal;
-  text-wrap:balance;
-  overflow-wrap:normal;
-  word-break:keep-all;
-  -webkit-hyphens:none;
-  hyphens:none;
-  transform:rotate(3.6deg);
-  transform-origin:center;
-  overflow:visible;
-}
-.ball.is-mixing .answer-face-overlay { opacity:0; }
-.ball.is-revealed .answer-face-overlay { animation:answer-fade 1.55s ease-out both; }
+.answer-svg-text tspan { dominant-baseline:middle; }
+.ball.is-mixing .answer-svg-text { opacity:0; }
+.ball.is-revealed .answer-svg-text { animation:answer-fade 1.55s ease-out both; }
 .ball.is-revealed .ico-face:not(.answer-triangle) { opacity:0; }
 .ball.is-revealed .answer-triangle { opacity:1; stroke-opacity:.72; filter:drop-shadow(0 4px 7px rgba(1,9,45,.46)); }
 
