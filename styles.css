@@ -138,8 +138,10 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
   line-height:1;
   white-space:normal;
   text-wrap:balance;
-  overflow-wrap:anywhere;
-  word-break:normal;
+  overflow-wrap:normal;
+  word-break:keep-all;
+  -webkit-hyphens:none;
+  hyphens:none;
   transform:rotate(3.6deg);
   transform-origin:center;
   overflow:hidden;

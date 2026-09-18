@@ -163,8 +163,8 @@
     while(
       (els.answerText.scrollWidth>els.answerText.clientWidth+1 ||
        els.answerText.scrollHeight>els.answerText.clientHeight+1) &&
-      size>6.5 &&
-      tries<40
+      size>5 &&
+      tries<50
     ){
       size-=0.5;
       els.answerText.style.fontSize=`${size}px`;
@@ -202,6 +202,8 @@
       els.ball.classList.remove('is-mixing');
       void els.ball.offsetWidth;
       els.answerText.textContent=result.answer.text;
+      els.answerText.style.overflowWrap='normal';
+      els.answerText.style.wordBreak='keep-all';
       fitAnswerText(result.answer.text);
       els.ball.classList.add('is-revealed');
       fadeMixingAudio(ANSWER_FADE_MS/1000);
