@@ -39,7 +39,7 @@
 
   const $ = (id) => document.getElementById(id);
   const els = {
-    ball: $('ball'), answerText: $('answerText'), statusText: $('statusText'), enableShakeButton: $('enableShakeButton'), askButton: $('askButton'), motionHelp: $('motionHelp'), soundToggle: $('soundToggle'),
+    ball: $('ball'), answerText: $('answerText'), statusText: $('statusText'), motionHelp: $('motionHelp'), soundToggle: $('soundToggle'), permissionGate: $('permissionGate'), permissionButton: $('permissionButton'), permissionNote: $('permissionNote'),
     learningToggle: $('learningToggle'), learningToggleLabel: $('learningToggleLabel'), learningPanel: $('learningPanel'), answersEditor: $('answersEditor'), answerCountLabel: $('answerCountLabel'), rangeLabel: $('rangeLabel'), randomMaxLabel: $('randomMaxLabel'), lastRandomNumber: $('lastRandomNumber'),
     operatorSelect: $('operatorSelect'), thresholdInput: $('thresholdInput'), thenGroupSelect: $('thenGroupSelect'), revealSeconds: $('revealSeconds'), ruleWarning: $('ruleWarning'), traceBox: $('traceBox'), addAnswerButton: $('addAnswerButton'), resetButton: $('resetButton'),
     hintDialog: $('hintDialog'), hintIcon: $('hintIcon'), hintTitle: $('hintTitle'), hintText: $('hintText')
@@ -164,11 +164,10 @@
     els.lastRandomNumber.textContent=String(result.randomNumber);
   }
 
-  async function askMagicEightBall(source='button'){
+  async function askMagicEightBall(source='shake'){
     if(busy||!settings.answers.length)return;
     if(!validateRule()){els.statusText.textContent='Fix the Magic Lab rule first!';return;}
     busy=true;
-    els.askButton.disabled=true;
     unlockAudio();
     clearTimeout(revealTimer);
     clearTimeout(finishTimer);
@@ -180,7 +179,7 @@
     els.ball.classList.remove('is-revealed','is-mixing');
     void els.ball.offsetWidth;
     els.answerText.textContent='';
-    els.statusText.textContent=source==='shake'?'Shake detected! Mixing the answers…':'Mixing the answers…';
+    els.statusText.textContent='Shake detected! Mixing the answers…';
     els.ball.classList.add('is-mixing');
     startMixingAudio();
 
@@ -196,7 +195,6 @@
 
       finishTimer=setTimeout(()=>{
         busy=false;
-        els.askButton.disabled=false;
       },ANSWER_FADE_MS);
     },durationMs);
   }
@@ -352,13 +350,53 @@
     mixAudio=null;
   }
 
+  function finishShakeSetup(){
+    if(shakeEnabled)return;
+    window.addEventListener('devicemotion',handleDeviceMotion,{passive:true});
+    shakeEnabled=true;
+    els.permissionGate.hidden=true;
+    els.statusText.textContent='Shake is ready! Think of a question and shake your iPad.';
+    els.motionHelp.textContent='Shake your iPad whenever you want a new answer.';
+    playTone(660,.16,.025,'sine');
+  }
+
   async function enableShake(){
     unlockAudio();
-    if(!('DeviceMotionEvent'in window)){els.statusText.textContent='This device does not have motion sensors. Use ASK for testing.';els.enableShakeButton.hidden=true;return;}
+
+    if(!('DeviceMotionEvent'in window)){
+      els.permissionNote.textContent='This device does not report motion sensor data.';
+      els.permissionButton.disabled=true;
+      els.statusText.textContent='Shake is not available on this device.';
+      return;
+    }
+
     try{
-      if(typeof DeviceMotionEvent.requestPermission==='function'){const permission=await DeviceMotionEvent.requestPermission();if(permission!=='granted'){els.statusText.textContent='Shake permission was not granted. You can try Enable Shake again.';return;}}
-      window.addEventListener('devicemotion',handleDeviceMotion,{passive:true});shakeEnabled=true;els.enableShakeButton.hidden=true;els.statusText.textContent='Shake is ready! Think of a question and shake your iPad.';els.motionHelp.textContent='Shake is enabled. The ASK button stays here only for testing.';playTone(660,.16,.025,'sine');
-    }catch(error){console.warn('Motion permission error:',error);els.statusText.textContent='Could not enable shake. Make sure this page is opened over HTTPS.';}
+      if(typeof DeviceMotionEvent.requestPermission==='function'){
+        const permission=await DeviceMotionEvent.requestPermission();
+        if(permission!=='granted'){
+          els.permissionNote.textContent='Motion access was not allowed. Tap Enable Shake to try again.';
+          els.statusText.textContent='Shake permission is needed to use the Magic 8 Ball.';
+          return;
+        }
+      }
+      finishShakeSetup();
+    }catch(error){
+      console.warn('Motion permission error:',error);
+      els.permissionNote.textContent='Tap Enable Shake again. Safari requires a direct tap to request motion access.';
+      els.statusText.textContent='Shake permission is needed to use the Magic 8 Ball.';
+    }
+  }
+
+  function requestShakeOnLoad(){
+    // Browsers that do not require a permission gesture can start immediately.
+    if('DeviceMotionEvent'in window && typeof DeviceMotionEvent.requestPermission!=='function'){
+      finishShakeSetup();
+      return;
+    }
+
+    // iOS requires requestPermission() to be called from a user gesture,
+    // so show this gate immediately when the page appears.
+    els.permissionGate.hidden=false;
   }
 
   function handleDeviceMotion(event){if(!shakeEnabled||busy)return;const acceleration=event.accelerationIncludingGravity||event.acceleration;if(!acceleration)return;const x=Number(acceleration.x)||0,y=Number(acceleration.y)||0,z=Number(acceleration.z)||0;const magnitude=Math.sqrt(x*x+y*y+z*z);const adjusted=Math.abs(magnitude-9.81);const now=Date.now();if(adjusted>=SHAKE_THRESHOLD&&now-lastShakeAt>SHAKE_COOLDOWN_MS){lastShakeAt=now;askMagicEightBall('shake');}}
@@ -367,10 +405,10 @@
   function addAnswer(){if(settings.answers.length>=MAX_ANSWERS)return;settings.answers.push({text:'New answer!',group:'maybe'});settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
   function deleteAnswer(index){if(settings.answers.length<=MIN_ANSWERS)return;settings.answers.splice(index,1);settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
 
-  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;els.askButton.disabled=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.innerHTML='SHAKE<br>ME!';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
+  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.style.fontSize='';els.answerText.style.lineHeight='';els.answerText.textContent='';els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
-  els.askButton.addEventListener('click',()=>askMagicEightBall('button'));els.enableShakeButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);
+  els.permissionButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);
   els.soundToggle.addEventListener('click',()=>{settings.muted=!settings.muted;saveSettings();renderSoundButton();if(settings.muted){stopMixingAudio(0);}else{unlockAudio();playTone(600,.16,.02,'sine');}});
   els.operatorSelect.addEventListener('change',()=>{settings.operator=els.operatorSelect.value;saveSettings();validateRule();});
   els.thresholdInput.addEventListener('change',()=>{settings.threshold=Math.round(clampNumber(els.thresholdInput.value,0,settings.answers.length-1,0));els.thresholdInput.value=settings.threshold;saveSettings();});
@@ -380,6 +418,6 @@
   document.addEventListener('pointerdown',unlockAudio,{once:true,passive:true});
 
   if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch((error)=>console.warn('Service worker:',error)));}
-  if('DeviceMotionEvent'in window&&typeof DeviceMotionEvent.requestPermission!=='function'){window.addEventListener('devicemotion',handleDeviceMotion,{passive:true});shakeEnabled=true;els.enableShakeButton.hidden=true;els.statusText.textContent='Shake is ready! Think of a question and shake your device.';}
   render();
+  requestShakeOnLoad();
 })();

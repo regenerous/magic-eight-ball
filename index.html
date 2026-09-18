@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
   <title>Magic Eight Ball</title>
 </head>
 <body>
@@ -104,10 +104,8 @@
       </div>
 
       <div class="prompt-block">
-        <p id="statusText" class="status-text">Think of a question, then shake your iPad!</p>
-        <button id="enableShakeButton" class="primary-button" type="button">📱 Enable Shake</button>
-        <button id="askButton" class="test-button" type="button">🎲 ASK (testing)</button>
-        <p id="motionHelp" class="microcopy">The ASK button is temporary for testing. Shake is the real magic.</p>
+        <p id="statusText" class="status-text">Allow shake access, then think of a question!</p>
+        <p id="motionHelp" class="microcopy">Shake your iPad to ask the Magic 8 Ball.</p>
       </div>
     </section>
 
@@ -170,7 +168,7 @@
 
         <section class="lab-card trace-card">
           <div class="lab-card-title"><h3>What happened last time?</h3><button class="hint-button" type="button" data-hint="trace" aria-label="What is this?">?</button></div>
-          <div id="traceBox" class="trace-box"><div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake or tap ASK</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div></div>
+          <div id="traceBox" class="trace-box"><div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div></div>
         </section>
 
         <div class="reset-row"><button id="resetButton" class="reset-button" type="button">↺ Reset to Defaults</button><p>Changes save automatically on this device.</p></div>
@@ -178,7 +176,18 @@
     </section>
   </main>
 
+  <div id="permissionGate" class="permission-gate" role="dialog" aria-modal="true" aria-labelledby="permissionTitle">
+    <div class="permission-card">
+      <div class="permission-icon" aria-hidden="true">📱</div>
+      <p class="eyebrow">ONE QUICK STEP</p>
+      <h2 id="permissionTitle">Let the 8 Ball feel the shake!</h2>
+      <p>Tap below so your iPad can use its motion sensor. Then just shake to ask a question.</p>
+      <button id="permissionButton" class="primary-button permission-button" type="button">Enable Shake</button>
+      <p id="permissionNote" class="permission-note">Apple requires this tap before Safari can show the motion permission.</p>
+    </div>
+  </div>
+
   <dialog id="hintDialog" class="hint-dialog"><form method="dialog"><button class="dialog-close" value="close" aria-label="Close hint">×</button><div id="hintIcon" class="hint-icon">💡</div><h2 id="hintTitle">Hint</h2><p id="hintText"></p><button class="primary-button dialog-ok" value="close">Got it!</button></form></dialog>
-  <script src="app.js?v=5" defer></script>
+  <script src="app.js?v=6" defer></script>
 </body>
 </html>
