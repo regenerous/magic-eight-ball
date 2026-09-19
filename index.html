@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=12" />
+  <link rel="stylesheet" href="styles.css?v=13" />
   <title>Magic Eight Ball</title>
 </head>
 <body>
@@ -132,7 +132,10 @@
         <section class="lab-card">
           <div class="lab-card-title">
             <h3>1. Your answer list</h3>
-            <button class="hint-button" type="button" data-hint="array" aria-label="What is an array?">?</button>
+            <div class="lab-card-controls">
+              <button id="resetAnswersButton" class="section-reset-button" type="button">↺ Reset</button>
+              <button class="hint-button" type="button" data-hint="array" aria-label="What is an array?">?</button>
+            </div>
           </div>
           <p class="code-line"><span class="code-key">LIST</span> Answers = <span id="answerCountLabel">12 items</span></p>
           <p class="range-note">Random number range: <strong id="rangeLabel">0–11</strong> <span class="auto-pill">AUTO</span></p>
@@ -154,7 +157,10 @@
         <section class="lab-card">
           <div class="lab-card-title">
             <h3>3. IF → THEN → ELSE</h3>
-            <button class="hint-button" type="button" data-hint="if" aria-label="What does IF THEN ELSE mean?">?</button>
+            <div class="lab-card-controls">
+              <button id="resetRuleButton" class="section-reset-button" type="button">↺ Reset</button>
+              <button class="hint-button" type="button" data-hint="if" aria-label="What does IF THEN ELSE mean?">?</button>
+            </div>
           </div>
           <div class="rule-builder" aria-label="Rule builder">
             <div class="rule-row"><span class="rule-word if">IF</span><span>random number is</span><select id="operatorSelect" aria-label="Comparison"><option value="lt">less than</option><option value="gt">greater than</option><option value="eq">equal to</option></select><input id="thresholdInput" type="number" inputmode="numeric" min="0" value="4" aria-label="Comparison number" /></div>
@@ -165,7 +171,13 @@
         </section>
 
         <section class="lab-card compact-card">
-          <div class="lab-card-title"><h3>4. Answer reveal time</h3><button class="hint-button" type="button" data-hint="timing" aria-label="What does reveal time mean?">?</button></div>
+          <div class="lab-card-title">
+            <h3>4. Answer reveal time</h3>
+            <div class="lab-card-controls">
+              <button id="resetTimingButton" class="section-reset-button" type="button">↺ Reset</button>
+              <button class="hint-button" type="button" data-hint="timing" aria-label="What does reveal time mean?">?</button>
+            </div>
+          </div>
           <label class="seconds-control" for="revealSeconds"><span>Seconds</span><input id="revealSeconds" type="number" inputmode="decimal" min="1" max="10" step="0.5" value="4" /></label>
         </section>
 
@@ -191,6 +203,6 @@
   </div>
 
   <dialog id="hintDialog" class="hint-dialog"><form method="dialog"><button class="dialog-close" value="close" aria-label="Close hint">×</button><div id="hintIcon" class="hint-icon">💡</div><h2 id="hintTitle">Hint</h2><p id="hintText"></p><button class="primary-button dialog-ok" value="close">Got it!</button></form></dialog>
-  <script src="app.js?v=11" defer></script>
+  <script src="app.js?v=12" defer></script>
 </body>
 </html>

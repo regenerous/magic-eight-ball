@@ -57,6 +57,7 @@
     ball: $('ball'), answerText: $('answerText'), answerMeasure: $('answerMeasure'), statusText: $('statusText'), motionHelp: $('motionHelp'), soundToggle: $('soundToggle'), permissionGate: $('permissionGate'), permissionButton: $('permissionButton'), permissionNote: $('permissionNote'),
     learningToggle: $('learningToggle'), learningToggleLabel: $('learningToggleLabel'), learningPanel: $('learningPanel'), answersEditor: $('answersEditor'), answerCountLabel: $('answerCountLabel'), rangeLabel: $('rangeLabel'), randomMaxLabel: $('randomMaxLabel'), lastRandomNumber: $('lastRandomNumber'),
     operatorSelect: $('operatorSelect'), thresholdInput: $('thresholdInput'), thenGroupSelect: $('thenGroupSelect'), revealSeconds: $('revealSeconds'), ruleWarning: $('ruleWarning'), traceBox: $('traceBox'), addAnswerButton: $('addAnswerButton'), resetButton: $('resetButton'),
+    resetAnswersButton: $('resetAnswersButton'), resetRuleButton: $('resetRuleButton'), resetTimingButton: $('resetTimingButton'),
     hintDialog: $('hintDialog'), hintIcon: $('hintIcon'), hintTitle: $('hintTitle'), hintText: $('hintText')
   };
 
@@ -570,10 +571,35 @@
   function addAnswer(){if(settings.answers.length>=MAX_ANSWERS)return;settings.answers.push({text:'New answer!',group:'maybe'});settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
   function deleteAnswer(index){if(settings.answers.length<=MIN_ANSWERS)return;settings.answers.splice(index,1);settings.threshold=Math.min(settings.threshold,settings.answers.length-1);saveSettings();render();}
 
+  function resetAnswerList(){
+    settings.answers=cloneDefaults().answers;
+    settings.threshold=Math.min(settings.threshold,settings.answers.length-1);
+    saveSettings();
+    render();
+    els.statusText.textContent='Answer list reset to defaults.';
+  }
+
+  function resetRuleSection(){
+    settings.operator=DEFAULTS.operator;
+    settings.threshold=Math.min(DEFAULTS.threshold,Math.max(0,settings.answers.length-1));
+    settings.thenGroup=DEFAULTS.thenGroup;
+    saveSettings();
+    updateRuleControls();
+    validateRule();
+    els.statusText.textContent='IF → THEN → ELSE rule reset to defaults.';
+  }
+
+  function resetTimingSection(){
+    settings.revealSeconds=DEFAULTS.revealSeconds;
+    saveSettings();
+    els.revealSeconds.value=settings.revealSeconds;
+    els.statusText.textContent='Answer reveal time reset to 4 seconds.';
+  }
+
   function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.replaceChildren();els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
-  els.permissionButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);
+  els.permissionButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);els.resetAnswersButton.addEventListener('click',resetAnswerList);els.resetRuleButton.addEventListener('click',resetRuleSection);els.resetTimingButton.addEventListener('click',resetTimingSection);
   els.soundToggle.addEventListener('click',()=>{settings.muted=!settings.muted;saveSettings();renderSoundButton();if(settings.muted){stopMixingAudio(0);}else{unlockAudio();playTone(600,.16,.02,'sine');}});
   els.operatorSelect.addEventListener('change',()=>{settings.operator=els.operatorSelect.value;saveSettings();validateRule();});
   els.thresholdInput.addEventListener('change',()=>{settings.threshold=Math.round(clampNumber(els.thresholdInput.value,0,settings.answers.length-1,0));els.thresholdInput.value=settings.threshold;saveSettings();});

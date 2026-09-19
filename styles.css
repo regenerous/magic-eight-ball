@@ -214,3 +214,29 @@ h1 { margin: 0; font-size: clamp(2rem, 8.5vw, 4rem); line-height: .88; letter-sp
 .answer-char-count.invalid {
   color: var(--danger);
 }
+
+.lab-card-controls {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+.section-reset-button {
+  min-height:32px;
+  padding:0 10px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  background:rgba(255,255,255,.06);
+  color:#dcd7ff;
+  font-size:.72rem;
+  font-weight:900;
+}
+.section-reset-button:active {
+  transform:translateY(1px);
+}
+@media (max-width:390px) {
+  .section-reset-button {
+    padding:0 8px;
+    font-size:.68rem;
+  }
+}
