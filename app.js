@@ -55,7 +55,7 @@
   const $ = (id) => document.getElementById(id);
   const els = {
     ball: $('ball'), answerText: $('answerText'), answerMeasure: $('answerMeasure'), statusText: $('statusText'), motionHelp: $('motionHelp'), soundToggle: $('soundToggle'), permissionGate: $('permissionGate'), permissionButton: $('permissionButton'), permissionNote: $('permissionNote'),
-    learningToggle: $('learningToggle'), learningToggleLabel: $('learningToggleLabel'), learningPanel: $('learningPanel'), answersEditor: $('answersEditor'), answerCountLabel: $('answerCountLabel'), rangeLabel: $('rangeLabel'), randomMaxLabel: $('randomMaxLabel'), lastRandomNumber: $('lastRandomNumber'),
+    learningToggle: $('learningToggle'), learningToggleLabel: $('learningToggleLabel'), learningPanel: $('learningPanel'), answersEditor: $('answersEditor'), answerCountLabel: $('answerCountLabel'), rangeLabel: $('rangeLabel'), randomMaxLabel: $('randomMaxLabel'), lastRandomNumber: $('lastRandomNumber'), generateRandomButton: $('generateRandomButton'), randomEvaluation: $('randomEvaluation'),
     operatorSelect: $('operatorSelect'), thresholdInput: $('thresholdInput'), thenGroupSelect: $('thenGroupSelect'), revealSeconds: $('revealSeconds'), ruleWarning: $('ruleWarning'), traceBox: $('traceBox'), addAnswerButton: $('addAnswerButton'), resetButton: $('resetButton'),
     resetAnswersButton: $('resetAnswersButton'), resetRuleButton: $('resetRuleButton'), resetTimingButton: $('resetTimingButton'),
     hintDialog: $('hintDialog'), hintIcon: $('hintIcon'), hintTitle: $('hintTitle'), hintText: $('hintText')
@@ -179,7 +179,33 @@
   }
 
   function evaluateCondition(randomNumber){if(settings.operator==='gt')return randomNumber>settings.threshold;if(settings.operator==='eq')return randomNumber===settings.threshold;return randomNumber<settings.threshold;}
-  function chooseAnswer(){const randomNumber=Math.floor(Math.random()*settings.answers.length);const conditionTrue=evaluateCondition(randomNumber);let candidateIndexes=settings.answers.map((answer,index)=>({answer,index})).filter(({answer})=>conditionTrue?answer.group===settings.thenGroup:answer.group!==settings.thenGroup).map(({index})=>index);if(candidateIndexes.length===0)candidateIndexes=settings.answers.map((_,index)=>index);const answerIndex=candidateIndexes[randomNumber%candidateIndexes.length];return{randomNumber,conditionTrue,answerIndex,answer:settings.answers[answerIndex]};}
+
+  function resolveRandomNumber(randomNumber){
+    const conditionTrue=evaluateCondition(randomNumber);
+    let candidateIndexes=settings.answers
+      .map((answer,index)=>({answer,index}))
+      .filter(({answer})=>conditionTrue?answer.group===settings.thenGroup:answer.group!==settings.thenGroup)
+      .map(({index})=>index);
+
+    if(candidateIndexes.length===0) candidateIndexes=settings.answers.map((_,index)=>index);
+
+    const candidatePosition=randomNumber%candidateIndexes.length;
+    const answerIndex=candidateIndexes[candidatePosition];
+
+    return{
+      randomNumber,
+      conditionTrue,
+      candidateIndexes,
+      candidatePosition,
+      answerIndex,
+      answer:settings.answers[answerIndex]
+    };
+  }
+
+  function chooseAnswer(){
+    const randomNumber=Math.floor(Math.random()*settings.answers.length);
+    return resolveRandomNumber(randomNumber);
+  }
   function formatCondition(number){const symbol=settings.operator==='gt'?'>':settings.operator==='eq'?'=':'<';return `${number} ${symbol} ${settings.threshold}`;}
   function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 
@@ -307,6 +333,61 @@
     }
     drawSvgLines(els.answerText,layout.lines,layout.size,layout.centerY);
     return true;
+  }
+
+  function operatorPhrase(){
+    if(settings.operator==='gt') return 'greater than';
+    if(settings.operator==='eq') return 'equal to';
+    return 'less than';
+  }
+
+  function renderRandomEvaluation(result){
+    const truth=result.conditionTrue?'TRUE':'FALSE';
+    const branch=result.conditionTrue?'THEN':'ELSE';
+    const groupText=result.conditionTrue
+      ? `${settings.thenGroup.toUpperCase()} answers`
+      : 'all remaining answers';
+
+    els.randomEvaluation.innerHTML=`
+      <div class="eval-step">
+        <span class="eval-badge random">RANDOM</span>
+        <div><strong>Picked ${result.randomNumber}</strong><small>from 0 to ${settings.answers.length-1}</small></div>
+      </div>
+      <div class="eval-arrow">↓</div>
+      <div class="eval-step">
+        <span class="eval-badge if">IF</span>
+        <div><strong>${result.randomNumber} is ${operatorPhrase()} ${settings.threshold}?</strong><small class="eval-truth ${truth.toLowerCase()}">${truth}</small></div>
+      </div>
+      <div class="eval-arrow">↓</div>
+      <div class="eval-step">
+        <span class="eval-badge branch">${branch}</span>
+        <div><strong>Choose from ${groupText}</strong><small>${result.candidateIndexes.length} possible answer${result.candidateIndexes.length===1?'':'s'}</small></div>
+      </div>
+      <div class="eval-arrow">↓</div>
+      <div class="eval-step answer">
+        <span class="eval-badge answer">ANSWER</span>
+        <div><strong>Answer[${result.answerIndex}]</strong><small>“${escapeHtml(result.answer.text)}”</small></div>
+      </div>
+    `;
+  }
+
+  function generateRandomLabDemo(){
+    if(busy){
+      els.randomEvaluation.innerHTML='<p class="random-evaluation-empty">Wait for the Magic 8 Ball to finish first.</p>';
+      return;
+    }
+    if(!validateRule()){
+      els.randomEvaluation.innerHTML='<p class="random-evaluation-empty warning-text">Fix the IF → THEN → ELSE rule first.</p>';
+      return;
+    }
+
+    const randomNumber=Math.floor(Math.random()*settings.answers.length);
+    const result=resolveRandomNumber(randomNumber);
+    els.lastRandomNumber.textContent=String(randomNumber);
+    renderRandomEvaluation(result);
+    updateTrace(result);
+    playTone(520,.09,.018,'sine',0);
+    playTone(700,.12,.014,'sine',.08);
   }
 
   function updateTrace(result){
@@ -576,6 +657,8 @@
     settings.threshold=Math.min(settings.threshold,settings.answers.length-1);
     saveSettings();
     render();
+    els.lastRandomNumber.textContent='—';
+    els.randomEvaluation.innerHTML='<p class="random-evaluation-empty">Tap the button to watch the program make a decision.</p>';
     els.statusText.textContent='Answer list reset to defaults.';
   }
 
@@ -586,6 +669,8 @@
     saveSettings();
     updateRuleControls();
     validateRule();
+    els.lastRandomNumber.textContent='—';
+    els.randomEvaluation.innerHTML='<p class="random-evaluation-empty">Tap the button to watch the program make a decision.</p>';
     els.statusText.textContent='IF → THEN → ELSE rule reset to defaults.';
   }
 
@@ -596,10 +681,10 @@
     els.statusText.textContent='Answer reveal time reset to 4 seconds.';
   }
 
-  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.replaceChildren();els.lastRandomNumber.textContent='—';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
+  function resetDefaults(){const ok=window.confirm('Reset all answers and Magic Lab settings back to the originals?');if(!ok)return;stopMixingAudio(0);clearTimeout(revealTimer);clearTimeout(finishTimer);busy=false;settings=cloneDefaults();saveSettings();els.ball.classList.remove('is-mixing','is-revealed');els.answerText.replaceChildren();els.lastRandomNumber.textContent='—';els.randomEvaluation.innerHTML='<p class="random-evaluation-empty">Tap the button to watch the program make a decision.</p>';els.traceBox.innerHTML='<div><span>RANDOM</span><strong>—</strong></div><div class="trace-arrow">↓</div><div><span>RULE</span><strong>Shake your iPad</strong></div><div class="trace-arrow">↓</div><div><span>ANSWER</span><strong>—</strong></div>';render();els.statusText.textContent='Defaults restored. Think of a question!';}
   function openHint(key){const hint=hints[key];if(!hint)return;els.hintIcon.textContent=hint.icon;els.hintTitle.textContent=hint.title;els.hintText.textContent=hint.text;if(typeof els.hintDialog.showModal==='function')els.hintDialog.showModal();else window.alert(`${hint.title}\n\n${hint.text}`);}
 
-  els.permissionButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.resetButton.addEventListener('click',resetDefaults);els.resetAnswersButton.addEventListener('click',resetAnswerList);els.resetRuleButton.addEventListener('click',resetRuleSection);els.resetTimingButton.addEventListener('click',resetTimingSection);
+  els.permissionButton.addEventListener('click',enableShake);els.learningToggle.addEventListener('click',toggleLearningPanel);els.addAnswerButton.addEventListener('click',addAnswer);els.generateRandomButton.addEventListener('click',generateRandomLabDemo);els.resetButton.addEventListener('click',resetDefaults);els.resetAnswersButton.addEventListener('click',resetAnswerList);els.resetRuleButton.addEventListener('click',resetRuleSection);els.resetTimingButton.addEventListener('click',resetTimingSection);
   els.soundToggle.addEventListener('click',()=>{settings.muted=!settings.muted;saveSettings();renderSoundButton();if(settings.muted){stopMixingAudio(0);}else{unlockAudio();playTone(600,.16,.02,'sine');}});
   els.operatorSelect.addEventListener('change',()=>{settings.operator=els.operatorSelect.value;saveSettings();validateRule();});
   els.thresholdInput.addEventListener('change',()=>{settings.threshold=Math.round(clampNumber(els.thresholdInput.value,0,settings.answers.length-1,0));els.thresholdInput.value=settings.threshold;saveSettings();});
